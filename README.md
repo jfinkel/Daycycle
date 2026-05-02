@@ -24,7 +24,7 @@ Automatically change your desktop wallpaper based on the sun's position througho
 ### Quick Install
 
 ```bash
-git clone https://github.com/jrfinkel/daycycle.git
+git clone https://github.com/jfinkel/daycycle.git
 cd daycycle
 ./daycycle-install.sh
 ```
