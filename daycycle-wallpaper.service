@@ -1,0 +1,7 @@
+[Unit]
+Description=Update wallpaper by sun position
+
+[Service]
+Type=oneshot
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+ExecStart=%h/bin/daycycle-wallpaper.sh
