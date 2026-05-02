@@ -86,6 +86,16 @@ echo
 echo "Checking Python dependencies..."
 check_python_module "tkinter" "tkinter" "sudo apt install -y python3-tk"
 
+# ImageTk for thumbnail support
+if ! python3 -c 'from PIL import ImageTk' >/dev/null 2>&1; then
+	echo -e "${YELLOW}Installing${NC} python3-pil.imagetk for thumbnail support..."
+	sudo apt update
+	sudo apt install -y python3-pil.imagetk
+	echo -e "${GREEN}✓${NC} python3-pil.imagetk installed"
+else
+	echo -e "${GREEN}✓${NC} python3-pil.imagetk is installed"
+fi
+
 # tkinterdnd2 is optional but recommended
 echo
 echo "Checking optional Python dependencies..."
@@ -93,6 +103,14 @@ if check_python_module "tkinterdnd2" "tkinterdnd2" "pip3 install --user tkinterd
 	echo -e "${GREEN}✓${NC} Drag-and-drop support will be available"
 else
 	echo -e "${YELLOW}Note:${NC} Drag-and-drop is disabled. Enable it with: pip3 install --user tkinterdnd2"
+fi
+
+# Pillow for thumbnails
+echo
+if check_python_module "PIL" "Pillow" "pip3 install --user Pillow"; then
+	echo -e "${GREEN}✓${NC} Thumbnail previews will be available"
+else
+	echo -e "${YELLOW}Note:${NC} Thumbnail previews are disabled. Enable it with: pip3 install --user Pillow"
 fi
 
 echo

@@ -16,17 +16,13 @@ if ! python3 -c 'import tkinterdnd2' >/dev/null 2>&1; then
 	echo "Enable it with: pip3 install --user tkinterdnd2" >&2
 fi
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Create bin directory if needed
-mkdir -p "$HOME/bin"
-
-# Install scripts if not already there
-if [ ! -f "$HOME/bin/daycycle-settings.py" ]; then
-	cp "$SCRIPT_DIR/daycycle-settings.py" "$HOME/bin/daycycle-settings.py"
-	chmod +x "$HOME/bin/daycycle-settings.py"
+# Find the source directory (where the original scripts are)
+# First try to find it via package manager, or use development location
+if [ -d "$HOME/Programming/Daycycle" ]; then
+	SOURCE_DIR="$HOME/Programming/Daycycle"
+else
+	SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
-# Run settings UI
-"$HOME/bin/daycycle-settings.py"
+# Run settings UI directly from source (always latest version)
+python3 -u "$SOURCE_DIR/daycycle-settings.py"

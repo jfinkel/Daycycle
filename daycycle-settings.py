@@ -11,6 +11,12 @@ from tkinter import filedialog, messagebox, ttk
 from zoneinfo import ZoneInfo
 
 try:
+    from PIL import Image, ImageTk
+except ImportError:
+    Image = None
+    ImageTk = None
+
+try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
 except ImportError:
     DND_FILES = None
@@ -122,6 +128,8 @@ class App:
         self.root.title("Daycycle Wallpaper Settings")
         self.values = parse_config(CONFIG_PATH)
         self.drop_enabled = TkinterDnD is not None
+        self.show_thumbnails = Image is not None and ImageTk is not None
+        self.thumbnail_labels: dict[str, tk.Label] = {}  # Store thumbnail label widgets
 
         outer = ttk.Frame(root, padding=12)
         outer.grid(row=0, column=0, sticky="nsew")
@@ -143,12 +151,16 @@ class App:
         self._add_simple(outer, 5, "Longitude", "LONGITUDE")
 
         ttk.Label(outer, text="Image Slots", font=("Sans", 10, "bold")).grid(
-            row=6, column=0, columnspan=6, sticky="w", pady=(12, 6)
+            row=6, column=0, columnspan=7, sticky="w", pady=(12, 6)
         )
-        ttk.Label(outer, text="Image File").grid(row=7, column=1, sticky="w")
-        ttk.Label(outer, text="Time Rule").grid(row=7, column=3, sticky="w")
-        ttk.Label(outer, text="Offset min").grid(row=7, column=4, sticky="w")
-        ttk.Label(outer, text="Clock HH:MM").grid(row=7, column=5, sticky="w")
+        if self.show_thumbnails:
+            ttk.Label(outer, text="Preview").grid(row=7, column=1, sticky="w", padx=(0, 4))
+            ttk.Label(outer, text="Image File").grid(row=7, column=2, sticky="w")
+        else:
+            ttk.Label(outer, text="Image File").grid(row=7, column=1, sticky="w")
+        ttk.Label(outer, text="Time Rule").grid(row=7, column=4 if self.show_thumbnails else 3, sticky="w")
+        ttk.Label(outer, text="Offset min").grid(row=7, column=5 if self.show_thumbnails else 4, sticky="w")
+        ttk.Label(outer, text="Clock HH:MM").grid(row=7, column=6 if self.show_thumbnails else 5, sticky="w")
 
         start = 8
         for idx, label in enumerate(SLOT_LABELS, start=1):
@@ -160,27 +172,59 @@ class App:
             off_key = f"OFFSET_MIN_{idx}"
             clk_key = f"CLOCK_TIME_{idx}"
 
-            img_var = tk.StringVar(value=self.values[img_key])
-            self.vars[img_key] = img_var
-            img_entry = ttk.Entry(outer, textvariable=img_var, width=50)
-            img_entry.grid(row=row, column=1, columnspan=2, sticky="w", pady=4)
-            self._enable_drop(img_entry, img_key)
-            ttk.Button(outer, text="Browse", command=lambda k=img_key: self.pick_file(k)).grid(
-                row=row, column=3, sticky="w", padx=(6, 8)
-            )
+            # Add thumbnail display if PIL is available
+            if self.show_thumbnails:
+                # Create a frame with fixed pixel size to contain the thumbnail
+                thumb_frame = tk.Frame(outer, bg="gray20", relief="solid", bd=1)
+                thumb_frame.grid(row=row, column=1, sticky="nsew", padx=(0, 4), pady=4)
+                # Force frame to fixed size (in pixels via minsize)
+                thumb_frame.grid_propagate(False)
+                thumb_frame.config(width=120, height=80)
+                
+                # Create label inside frame without width/height constraints
+                thumb_label = tk.Label(thumb_frame, bg="gray20")
+                thumb_label.pack(fill="both", expand=True)
+                self.thumbnail_labels[img_key] = thumb_label
+
+                img_var = tk.StringVar(value=self.values[img_key])
+                self.vars[img_key] = img_var
+                img_entry = ttk.Entry(outer, textvariable=img_var, width=25)
+                img_entry.grid(row=row, column=2, sticky="w", pady=4)
+                # Update thumbnail when image path changes
+                img_var.trace_add("write", lambda *args, k=img_key: self._update_thumbnail(k))
+                self._update_thumbnail(img_key)  # Load initial thumbnail
+                self._enable_drop(img_entry, img_key)
+                ttk.Button(outer, text="Browse", command=lambda k=img_key: self.pick_file(k)).grid(
+                    row=row, column=3, sticky="w", padx=(6, 0)
+                )
+                rule_col = 4
+                off_col = 5
+                clk_col = 6
+            else:
+                img_var = tk.StringVar(value=self.values[img_key])
+                self.vars[img_key] = img_var
+                img_entry = ttk.Entry(outer, textvariable=img_var, width=40)
+                img_entry.grid(row=row, column=1, columnspan=2, sticky="w", pady=4)
+                self._enable_drop(img_entry, img_key)
+                ttk.Button(outer, text="Browse", command=lambda k=img_key: self.pick_file(k)).grid(
+                    row=row, column=3, sticky="w", padx=(6, 8)
+                )
+                rule_col = 3
+                off_col = 4
+                clk_col = 5
 
             rule_var = tk.StringVar(value=self.values[rule_key])
             self.vars[rule_key] = rule_var
             combo = ttk.Combobox(outer, textvariable=rule_var, width=10, values=RULES, state="readonly")
-            combo.grid(row=row, column=4, sticky="w", padx=(0, 8))
+            combo.grid(row=row, column=rule_col, sticky="w", padx=(0, 8))
 
             off_var = tk.StringVar(value=self.values[off_key])
             self.vars[off_key] = off_var
-            ttk.Entry(outer, textvariable=off_var, width=9).grid(row=row, column=5, sticky="w", padx=(0, 8))
+            ttk.Entry(outer, textvariable=off_var, width=9).grid(row=row, column=off_col, sticky="w", padx=(0, 8))
 
             clk_var = tk.StringVar(value=self.values[clk_key])
             self.vars[clk_key] = clk_var
-            ttk.Entry(outer, textvariable=clk_var, width=8).grid(row=row, column=6, sticky="w")
+            ttk.Entry(outer, textvariable=clk_var, width=8).grid(row=row, column=clk_col, sticky="w")
 
         self.remove_cron = tk.BooleanVar(value=True)
         ttk.Checkbutton(
@@ -192,6 +236,8 @@ class App:
         hint = "Drag image files onto slot fields to set paths."
         if not self.drop_enabled:
             hint += " (Install tkinterdnd2 to enable drag-and-drop.)"
+        if not self.show_thumbnails:
+            hint += " (Install python3-pil.imagetk for thumbnail previews.)"
         ttk.Label(outer, text=hint).grid(row=16, column=0, columnspan=7, sticky="w", pady=(0, 8))
 
         btns = ttk.Frame(outer)
@@ -203,8 +249,12 @@ class App:
     def _enable_drop(self, widget: ttk.Entry, key: str) -> None:
         if not self.drop_enabled or DND_FILES is None:
             return
-        widget.drop_target_register(DND_FILES)
-        widget.dnd_bind("<<Drop>>", lambda event, slot=key: self._on_drop(event, slot))
+        try:
+            widget.drop_target_register(DND_FILES)
+            widget.dnd_bind("<<Drop>>", lambda event, slot=key: self._on_drop(event, slot))
+        except Exception:
+            # tkinterdnd2 may not be properly initialized, silently fail
+            pass
 
     def _on_drop(self, event, key: str) -> None:
         paths = self.root.tk.splitlist(event.data)
@@ -214,6 +264,40 @@ class App:
         if dropped.is_dir():
             return
         self.vars[key].set(str(dropped))
+
+    def _update_thumbnail(self, key: str) -> None:
+        """Load and display thumbnail for the given image key."""
+        if not self.show_thumbnails:
+            return
+        
+        label = self.thumbnail_labels.get(key)
+        if not label:
+            return
+        
+        img_path = self.vars[key].get().strip()
+        if not img_path:
+            label.config(image="")
+            return
+        
+        path = pathlib.Path(img_path).expanduser()
+        if not path.exists():
+            label.config(image="")
+            return
+        
+        try:
+            # Load and resize image to fit in thumbnail area
+            img = Image.open(path)
+            img.thumbnail((120, 80), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(img, master=self.root)
+            
+            # Store reference directly on label to prevent garbage collection
+            label._photo_ref = photo
+            
+            # Display image on label
+            label.config(image=photo)
+        except Exception:
+            # If image fails to load, clear it
+            label.config(image="")
 
     def _add_simple(
         self,
