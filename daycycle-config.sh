@@ -26,3 +26,12 @@ fi
 
 # Run settings UI directly from source (always latest version)
 python3 -u "$SOURCE_DIR/daycycle-settings.py"
+
+# Print helpful commands after settings close
+echo
+echo "To check service status, use:"
+echo "  systemctl --user status daycycle-wallpaper.timer"
+echo
+echo "View logs with:"
+echo "  journalctl --user-unit daycycle-wallpaper -n 20"
+echo

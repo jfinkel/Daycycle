@@ -1,5 +1,21 @@
 # Daycycle Usage Guide
 
+## Checking Service Status
+
+Since daycycle runs as a **user service** (not system-wide), always use `systemctl --user`:
+
+```bash
+# Check if timer is active
+systemctl --user status daycycle-wallpaper.timer
+
+# View recent logs
+journalctl --user-unit daycycle-wallpaper -n 20
+
+# Enable/disable timer
+systemctl --user enable daycycle-wallpaper.timer
+systemctl --user disable daycycle-wallpaper.timer
+```
+
 ## Quick Start
 
 1. **Install**

@@ -163,3 +163,9 @@ echo "1. Add wallpaper images to $HOME/wallpapers/daycycle/"
 echo "2. Run daycycle-settings.py to configure your location and wallpaper schedule"
 echo "   or run: $HOME/bin/daycycle-settings.py"
 echo
+echo "Check service status with:"
+echo "  systemctl --user status daycycle-wallpaper.timer"
+echo
+echo "View recent logs with:"
+echo "  journalctl --user-unit daycycle-wallpaper -n 20"
+echo
