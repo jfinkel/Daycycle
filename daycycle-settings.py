@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+import tkinter.font
 from zoneinfo import ZoneInfo
 
 try:
@@ -131,7 +132,13 @@ class App:
         self.show_thumbnails = Image is not None and ImageTk is not None
         self.thumbnail_labels: dict[str, tk.Label] = {}  # Store thumbnail label widgets
 
-        outer = ttk.Frame(root, padding=12)
+        # Configure modern styling
+        self._setup_style()
+        
+        # Set minimum window size for better layout
+        self.root.minsize(1000, 700)
+
+        outer = ttk.Frame(root, padding=16)
         outer.grid(row=0, column=0, sticky="nsew")
 
         self.vars: dict[str, tk.StringVar] = {}
@@ -154,18 +161,18 @@ class App:
             row=6, column=0, columnspan=7, sticky="w", pady=(12, 6)
         )
         if self.show_thumbnails:
-            ttk.Label(outer, text="Preview").grid(row=7, column=1, sticky="w", padx=(0, 4))
-            ttk.Label(outer, text="Image File").grid(row=7, column=2, sticky="w")
+            ttk.Label(outer, text="Preview", font=("Sans", 9)).grid(row=7, column=1, sticky="w", padx=(0, 4))
+            ttk.Label(outer, text="Image File", font=("Sans", 9)).grid(row=7, column=2, sticky="w")
         else:
-            ttk.Label(outer, text="Image File").grid(row=7, column=1, sticky="w")
-        ttk.Label(outer, text="Time Rule").grid(row=7, column=4 if self.show_thumbnails else 3, sticky="w")
-        ttk.Label(outer, text="Offset min").grid(row=7, column=5 if self.show_thumbnails else 4, sticky="w")
-        ttk.Label(outer, text="Clock HH:MM").grid(row=7, column=6 if self.show_thumbnails else 5, sticky="w")
+            ttk.Label(outer, text="Image File", font=("Sans", 9)).grid(row=7, column=1, sticky="w")
+        ttk.Label(outer, text="Time Rule", font=("Sans", 9)).grid(row=7, column=4 if self.show_thumbnails else 3, sticky="w")
+        ttk.Label(outer, text="Offset min", font=("Sans", 9)).grid(row=7, column=5 if self.show_thumbnails else 4, sticky="w")
+        ttk.Label(outer, text="Clock HH:MM", font=("Sans", 9)).grid(row=7, column=6 if self.show_thumbnails else 5, sticky="w")
 
         start = 8
         for idx, label in enumerate(SLOT_LABELS, start=1):
             row = start + idx - 1
-            ttk.Label(outer, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=4)
+            ttk.Label(outer, text=label, font=("Sans", 9)).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=4)
 
             img_key = f"IMAGE_{idx}"
             rule_key = f"RULE_{idx}"
@@ -238,13 +245,40 @@ class App:
             hint += " (Install tkinterdnd2 to enable drag-and-drop.)"
         if not self.show_thumbnails:
             hint += " (Install python3-pil.imagetk for thumbnail previews.)"
-        ttk.Label(outer, text=hint).grid(row=16, column=0, columnspan=7, sticky="w", pady=(0, 8))
+        ttk.Label(outer, text=hint, font=("Sans", 8)).grid(row=16, column=0, columnspan=7, sticky="w", pady=(0, 8))
 
         btns = ttk.Frame(outer)
         btns.grid(row=17, column=0, columnspan=7, sticky="e")
         ttk.Button(btns, text="Save", command=self.save).grid(row=0, column=0, padx=(0, 8))
         ttk.Button(btns, text="Install/Enable Timer", command=self.install_timer).grid(row=0, column=1, padx=(0, 8))
-        ttk.Button(btns, text="Run Now", command=self.run_now).grid(row=0, column=2)
+        ttk.Button(btns, text="Run Now", command=self.run_now).grid(row=0, column=2, padx=(0, 8))
+        ttk.Button(btns, text="Cancel", command=self.cancel).grid(row=0, column=3)
+
+        # Hook window close button to show confirmation if needed
+        self.root.protocol("WM_DELETE_WINDOW", self.cancel)
+
+    def _setup_style(self) -> None:
+        """Configure modern fonts and styling."""
+        style = ttk.Style()
+        
+        # Determine best font for the system
+        # Try modern sans-serif fonts in order of preference
+        fonts_to_try = ["Segoe UI", "Ubuntu", "DejaVu Sans", "Noto Sans", "Helvetica", "Arial"]
+        available_fonts = tk.font.families()
+        base_font = next((f for f in fonts_to_try if f in available_fonts), "TkDefaultFont")
+        
+        # Create larger font definitions
+        default_font = (base_font, 10)
+        heading_font = (base_font, 12, "bold")
+        small_font = (base_font, 9)
+        
+        # Apply fonts to common widgets
+        style.configure("TLabel", font=default_font)
+        style.configure("TButton", font=default_font, padding=6)
+        style.configure("TEntry", font=default_font, padding=4)
+        style.configure("TCombobox", font=default_font)
+        style.configure("TCheckbutton", font=default_font)
+        style.configure("Heading.TLabel", font=heading_font)
 
     def _enable_drop(self, widget: ttk.Entry, key: str) -> None:
         if not self.drop_enabled or DND_FILES is None:
@@ -308,10 +342,10 @@ class App:
         browse_command=None,
         browse_text: str = "Browse",
     ) -> None:
-        ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=3)
+        ttk.Label(parent, text=label, font=("Sans", 10)).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=5)
         var = tk.StringVar(value=self.values[key])
         self.vars[key] = var
-        ttk.Entry(parent, textvariable=var, width=42).grid(row=row, column=1, columnspan=3, sticky="w", pady=3)
+        ttk.Entry(parent, textvariable=var, width=42).grid(row=row, column=1, columnspan=3, sticky="w", pady=5)
         if browse_command is not None:
             ttk.Button(parent, text=browse_text, command=browse_command).grid(
                 row=row, column=4, sticky="w", padx=(6, 0)
@@ -380,6 +414,24 @@ class App:
 
     def _run(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         return subprocess.run(cmd, check=False, capture_output=True, text=True)
+
+    def _has_unsaved_changes(self) -> bool:
+        """Check if any field values differ from the original config."""
+        for key, var in self.vars.items():
+            if var.get().strip() != self.values[key]:
+                return True
+        return False
+
+    def cancel(self) -> None:
+        """Handle cancel/close with confirmation if changes exist."""
+        if self._has_unsaved_changes():
+            response = messagebox.askyesno(
+                "Unsaved Changes",
+                "You have unsaved changes. Are you sure you want to exit without saving?"
+            )
+            if not response:
+                return
+        self.root.destroy()
 
     def save(self) -> None:
         try:
