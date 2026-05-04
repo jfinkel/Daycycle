@@ -4,6 +4,7 @@ Description=Run daycycle wallpaper updater
 [Timer]
 OnBootSec=1min
 OnUnitActiveSec=15min
+OnResumeFromSuspend=0
 Persistent=true
 
 [Install]
